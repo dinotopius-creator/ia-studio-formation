@@ -5,7 +5,7 @@ compatibility_date = "2026-10-17"
 [[d1_databases]]
 binding = "DB"
 database_name = "ia-studio-orders"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "c333e0c8-85f6-448e-926c-06074585cdab"
 
 [vars]
 ALLOWED_ORIGIN = "https://dinotopius-creator.github.io"
