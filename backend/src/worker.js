@@ -29,10 +29,11 @@ async function sendWelcomeEmail(env, order) {
 async function createCheckout(request, env, headers) {
   const body = await request.json().catch(() => null); const firstName = clean(body?.firstName, 80), lastName = clean(body?.lastName, 80), project = clean(body?.project, 120), detail = clean(body?.detail, 700);
   if (!firstName || !lastName || !project) return err('Informations de projet incomplètes.', 422, headers);
+  if (body?.digitalConsent !== true) return err('Ton accord explicite pour l’accès immédiat est requis avant le paiement.', 422, headers);
   const leadId = randomId(), now = new Date().toISOString();
   await env.DB.prepare('INSERT INTO leads (id, first_name, last_name, project, project_detail, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(leadId, firstName, lastName, project, detail, now).run();
   try {
-    const form = new URLSearchParams({ mode: 'payment', 'line_items[0][price]': env.STRIPE_PRICE_ID, 'line_items[0][quantity]': '1', customer_creation: 'always', success_url: `${env.SUCCESS_URL}?session_id={CHECKOUT_SESSION_ID}`, cancel_url: env.CANCEL_URL, 'metadata[lead_id]': leadId, 'metadata[source]': 'ia-studio-site' });
+    const form = new URLSearchParams({ mode: 'payment', 'line_items[0][price]': env.STRIPE_PRICE_ID, 'line_items[0][quantity]': '1', customer_creation: 'always', success_url: `${env.SUCCESS_URL}?session_id={CHECKOUT_SESSION_ID}`, cancel_url: env.CANCEL_URL, 'metadata[lead_id]': leadId, 'metadata[source]': 'ia-studio-site', 'metadata[digital_access_consent]': 'true', 'metadata[digital_access_consent_at]': now, 'metadata[terms_version]': '2026-10-18' });
     const session = await stripe(request, env, 'checkout/sessions', form);
     return json({ checkoutUrl: session.url }, 200, headers);
   } catch (error) { await env.DB.prepare('DELETE FROM leads WHERE id = ?').bind(leadId).run(); return err(error.message, 502, headers); }
